@@ -6,10 +6,23 @@ use dotenv_parser::parse_dotenv;
 extern crate gmod;
 
 unsafe extern "C-unwind" fn read_env(lua: gmod::lua::State) -> i32 {
-    let contents = fs::read_to_string("./garrysmod/.env")
-        .expect("./garrysmod/.env does not seem to exist");
+    let contents = match fs::read_to_string("./garrysmod/.env") {
+        Ok(c) => c,
+        Err(_) => {
+            eprintln!("./garrysmod/.env does not seem to exist");
+            lua.push_nil();
+            return 1;
+        }
+    };
 
-    let env_vars = parse_dotenv(&contents).unwrap();
+    let env_vars = match parse_dotenv(&contents) {
+        Ok(vars) => vars,
+        Err(_) => {
+            lua.push_nil();
+            return 1;
+        }
+    };
+
     let lookup_var = lua.check_string(1).into_owned();
 
     if env_vars.contains_key(&lookup_var) {
